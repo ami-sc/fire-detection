@@ -35,101 +35,72 @@ import numpy as np
     
 """
 
-def find_if_pixel_moving(current_frame, previous_frame, Threshold):
-    Status = []
-    for i in range(len(current_frame)):
-        a = []
-        for j in range(len(current_frame[0])):          
-            if abs(current_frame[i][j] - previous_frame[i][j]) > Threshold[i][j]:
-                a.append(1)
-            else: 
-                a.append(0)
-        Status.append(a)
-    
-    return Status
 
 
 
-def Update_background(current_frame, Background, Status, Threshold):
-    a = 0.95
-    c = 1.3
-    for i in range(len(current_frame)):
-        for j in range(len(current_frame[0])):
-            
-            if Status[i][j] == 0:
-                Threshold[i][j] = Threshold[i][j]*a + (1-a)*(c*abs(current_frame[i][j]-Background[i][j]))
-            
-            
-    return Threshold
                 
-def Update_Threshold(current_frame, Background, Threshold, previous_frame):
+def movement_detection_and_updates(current_frame, Background, Threshold, previous_frame, image):
     a = 0.95
     c = 2
-    for i in range(len(current_frame)):
+    for i in range(len(current_frame)):  
         for j in range(len(current_frame[0])):
-            #if Status[i][j] == 0:
-            if abs(current_frame[i][j] - previous_frame[i][j]) > Threshold[i][j]:
-                Threshold[i][j] = Threshold[i][j]*a + (1-a)*(c*abs(current_frame[i][j]-Background[i][j]))
-                Background[i][j] = Background[i][j]*a + (1-a)*current_frame[i][j]
-            
-    return (Threshold,Background)
-
-
-
-def estimate_moving_regions(current_frame, Background, Threshold, image):
-
-    
-    for i in range(len(current_frame)):
-        
-        for j in range(len(current_frame[0])):
-            a = current_frame[i][j] - Background[i][j]
-            
-            if abs(a) > Threshold[i][j]: 
-             
+          
+                
+            # this is moving region estimation (on image it draws red pixels if movement detected)
+           
+            if abs( current_frame[i][j] - Background[i][j]) > Threshold[i][j]: 
                 #current_frame[i][j] = False
-                image[i][j] = (0,0,255)         
+                image[i][j] = (0,0,255)  
+                
+            # updates Threshold and Backgroun 
+            current_frame_a = current_frame[i][j] 
+            Threshold_a = Threshold[i][j]
+            Background_a = Background[i][j]
+         
+            if abs(current_frame_a-previous_frame[i][j] ) > Threshold_a:
+                Threshold_a = Threshold_a*a+(1-a)*(c*abs(current_frame[i][j] - Background[i][j]))
+                Background_a = Background_a*a + (1-a)*current_frame_a
        
-    return image #current_frame
             
-    
-def lol(image, moving_pixels): 
-    
-    for i in range(len(moving_pixels)):
-        for j in range(len(moving_pixels[0])): 
-            if moving_pixels[i][j] == False: 
-                image[i][j] = (0,0,255)
-    return image
+    return (Threshold,Background, image)
 
 
-#video = cv2.VideoCapture('C:/Users/mediolanum/Desktop/video/fire.mp4')
-video = cv2.VideoCapture(0)
+
+### PROGRAMM STARTS HERE ###
+
+
+# reading video and splitting image into chanels
+video = cv2.VideoCapture('C:/Users/mediolanum/Desktop/video/fire.mp4')
 image = video.read()[1]
 img,b,r = cv2.split(image)
 
-Background = []
-Threshold = np.full((img.shape[0], img.shape[1]), 50)
 
-previous_frame = None
+# Initializing Threshold, Background and previous_frame
+Threshold = np.full((img.shape[0], img.shape[1]), 50)
+Background = img
+previous_frame = img
+
+
 
 cv2.namedWindow("l", cv2.WINDOW_KEEPRATIO)
 while True: 
     
     image = video.read()[1]
     img,b,r = cv2.split(image)
+    
+    # converting array to np.int16 as later substracting and adding gives overflow error, 
+    # Im trying to find the other way 
+    img = np.asarray(img, dtype=np.int16)
 
    
-    img = np.asarray(img, dtype=np.int16)
-   
-    if len(Background) == 0: 
-        Background = img
-        previous_frame = img
-        continue
     
-    #Status = find_if_pixel_moving(img, previous_frame, Threshold)    
-#    Background_updated = Update_background(img, Background, Status)
-    Threshold_updated,Background_updated = Update_Threshold(img, Background, Threshold,previous_frame)
-    moving_pixels = estimate_moving_regions(img, Background, Threshold, image)
-    #oo = lol(image, moving_pixels)
+        
+    # Calling one function that will firstly compute if pixels are different from 
+    # previous frame, then it will update threshold and background
+    Threshold_updated,Background_updated, moving_pixels = movement_detection_and_updates(img, Background, Threshold,previous_frame, image)
+    
+    
+    # updating 
     previous_frame = img
     Background = Background_updated
     Threshold = Threshold_updated
@@ -138,12 +109,11 @@ while True:
     
     cv2.imshow("l", moving_pixels)
     
-    cv2.waitKey(100)
+    cv2.waitKey(10)
     
   
     print("-------------------NEXT FRAME-------------------")
     
 cv2.destroyAllWindows()
-    
     
         
