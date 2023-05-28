@@ -33,87 +33,59 @@ import numpy as np
         
                 |P(x,n) - B(x,n)| > T(x,n)
     
+                
+#check this to understand how npwhere works
+
+background = np.random.randint(0,255,[4,1,3]) #like a 4x1 image
+img = np.random.randint(0,255,[4,1,3])
+print(background)
+print(img)
+
+binary_mask = abs(background-img)>50
+print(binary_mask)
+
+new_background = np.where(binary_mask, img, background)
+print(new_background)
 """
 
-
-
-
-                
-def movement_detection_and_updates(current_frame, Background, Threshold, previous_frame, image):
-    a = 0.95
-    c = 2
-    for i in range(len(current_frame)):  
-        for j in range(len(current_frame[0])):
-          
-                
-            # this is moving region estimation (on image it draws red pixels if movement detected)
-           
-            if abs( current_frame[i][j] - Background[i][j]) > Threshold[i][j]: 
-                #current_frame[i][j] = False
-                image[i][j] = (0,0,255)  
-                
-            # updates Threshold and Backgroun 
-            current_frame_a = current_frame[i][j] 
-            Threshold_a = Threshold[i][j]
-            Background_a = Background[i][j]
-         
-            if abs(current_frame_a-previous_frame[i][j] ) > Threshold_a:
-                Threshold_a = Threshold_a*a+(1-a)*(c*abs(current_frame[i][j] - Background[i][j]))
-                Background_a = Background_a*a + (1-a)*current_frame_a
-       
-            
-    return (Threshold,Background, image)
-
-
+# Useful functions:
+def outline():
+    print("-------------------NEXT FRAME-------------------")
 
 ### PROGRAMM STARTS HERE ###
 
-
-# reading video and splitting image into chanels
-video = cv2.VideoCapture('C:/Users/mediolanum/Desktop/video/fire.mp4')
-image = video.read()[1]
-img,b,r = cv2.split(image)
-
-
-# Initializing Threshold, Background and previous_frame
-Threshold = np.full((img.shape[0], img.shape[1]), 50)
-Background = img
-previous_frame = img
+# constants:
+initial_treshold = 50
+a = 0.7 # small = very fast recovery ||| big = very slow recovery
+c = 4 # small = doesn't detect small differrences ||| big = detects big differences
 
 
+# initialization
+video = cv2.VideoCapture(0) #put instead of 0 the path of the video
+background = video.read()[1]
+threshold = np.full(background.shape, initial_treshold)
+red = np.full(background.shape, [0,0,255], dtype = np.uint8) #(1) this is needed only if you want to see where it changes
 
-cv2.namedWindow("l", cv2.WINDOW_KEEPRATIO)
 while True: 
     
-    image = video.read()[1]
-    img,b,r = cv2.split(image)
-    
-    # converting array to np.int16 as later substracting and adding gives overflow error, 
-    # Im trying to find the other way 
-    img = np.asarray(img, dtype=np.int16)
+    img = video.read()[1]
+    cv2.imshow("camera", img)
 
-   
+    difference = abs(img-background)
+    #a binary mask of the same shape of the img
+    #the value[i,j] == true if abs(img-treshold) > 50, which means iff the image changes enough
+    changes = difference > threshold 
+    highlight = np.where(changes, red, img) #(1) red if true else value from camera
+    cv2.imshow("changes", highlight) #(1)
+
+    #compute the new background and tresholds as if we had to update all the pixels (is it possible to ptimize more? computing only if we had to compute it?)
+    updated_background = background*a + (1-a)*img
+    updated_treshold = threshold*a+(1-a)*(c*difference)
+
+    #update the background and thresholds only if difference > threshold 
+    background = np.where(changes, updated_background, background)
+    threshold = np.where(changes, updated_treshold, threshold)
+    #cv2.imshow("background", background)
     
-        
-    # Calling one function that will firstly compute if pixels are different from 
-    # previous frame, then it will update threshold and background
-    Threshold_updated,Background_updated, moving_pixels = movement_detection_and_updates(img, Background, Threshold,previous_frame, image)
-    
-    
-    # updating 
-    previous_frame = img
-    Background = Background_updated
-    Threshold = Threshold_updated
-    
-  
-    
-    cv2.imshow("l", moving_pixels)
-    
-    cv2.waitKey(10)
-    
-  
-    print("-------------------NEXT FRAME-------------------")
-    
-cv2.destroyAllWindows()
-    
-        
+    if  cv2.waitKey(1) & 0xFF == ord('q'):
+        break
