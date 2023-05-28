@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon May 22 12:29:44 2023
@@ -56,36 +58,42 @@ def outline():
 
 # constants:
 initial_treshold = 50
-a = 0.7 # small = very fast recovery ||| big = very slow recovery
+a = 0.95 # small = very fast recovery ||| big = very slow recovery
 c = 4 # small = doesn't detect small differrences ||| big = detects big differences
 
 
 # initialization
-video = cv2.VideoCapture(0) #put instead of 0 the path of the video
+video = cv2.VideoCapture('C:/Users/mediolanum/Desktop/video/fire.mp4') #put instead of 0 the path of the video
 background = video.read()[1]
 threshold = np.full(background.shape, initial_treshold)
 red = np.full(background.shape, [0,0,255], dtype = np.uint8) #(1) this is needed only if you want to see where it changes
+previous_image = video.read()[1]
+
+
 
 while True: 
     
     img = video.read()[1]
-    cv2.imshow("camera", img)
+    #cv2.imshow("camera", img)
 
-    difference = abs(img-background)
+    difference_with_previous = abs(img-previous_image)
+    difference_with_background = abs(img-background)
     #a binary mask of the same shape of the img
     #the value[i,j] == true if abs(img-treshold) > 50, which means iff the image changes enough
-    changes = difference > threshold 
-    highlight = np.where(changes, red, img) #(1) red if true else value from camera
+    changes = difference_with_previous > threshold 
+    changes_compared_to_background = difference_with_background > threshold
+    highlight = np.where(changes_compared_to_background, red, img) #(1) red if true else value from camera
     cv2.imshow("changes", highlight) #(1)
-
+    
     #compute the new background and tresholds as if we had to update all the pixels (is it possible to ptimize more? computing only if we had to compute it?)
     updated_background = background*a + (1-a)*img
-    updated_treshold = threshold*a+(1-a)*(c*difference)
+    updated_treshold = threshold*a+(1-a)*(c*difference_with_background)
 
     #update the background and thresholds only if difference > threshold 
     background = np.where(changes, updated_background, background)
     threshold = np.where(changes, updated_treshold, threshold)
+    previous_image = img
     #cv2.imshow("background", background)
-    
-    if  cv2.waitKey(1) & 0xFF == ord('q'):
+   
+    if  cv2.waitKey(10) & 0xFF == ord('q'):
         break
