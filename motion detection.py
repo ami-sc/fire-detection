@@ -75,7 +75,7 @@ while True:
     #a binary mask of the same shape of the img
     #the value[i,j] == true if abs(img-treshold) > 50, which means iff the image changes enough
     changes = difference > threshold 
-    highlight = background = np.where(changes, red, img) #(1) red if true else value from camera
+    highlight = np.where(changes, red, img) #(1) red if true else value from camera
     cv2.imshow("changes", highlight) #(1)
 
     #compute the new background and tresholds as if we had to update all the pixels (is it possible to ptimize more? computing only if we had to compute it?)
