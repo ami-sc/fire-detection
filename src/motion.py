@@ -17,21 +17,20 @@ class MotionDetection():
         self.red = np.full(self.shape, [0,0,255], dtype = np.uint8) 
 
     def define_rectangles(self):
-        h_n = 20 #How many points in the heihgt
-        w_n = 30 # How many points in the width
+        h_n = 20  # number of rectangles in height
+        w_n = 60  # number of rectangle in width
         h = self.shape[0]
         w = self.shape[1]
+
         width_points = np.linspace(0, w, w_n, dtype=int)
         height_points = np.linspace(0, h, h_n, dtype=int)
-        self.rectangles = []
-        for ii, i, in enumerate(width_points):
-            if ii == 0: continue
-            for ij, j in enumerate(height_points):
-                if ij == 0: continue
-               # top_left = (width_points[ii-1], height_points[ij-1])
-              #  bottom_right = (i,j)
-               # self.rectangles.append((width_points[ii-1], height_points[ij-1], i,j)) #top left, bottom right
-                self.rectangles.append((width_points[ii-1], height_points[ij-1], i,j))
+
+        width_start, height_start = np.meshgrid(width_points[:-1], height_points[:-1])
+        width_end, height_end = np.meshgrid(width_points[1:], height_points[1:])
+
+        self.rectangles = np.stack((width_start, height_start, width_end, height_end), axis=-1).reshape(-1, 4)
+
+
 
 
 
