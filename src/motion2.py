@@ -1,9 +1,13 @@
 import cv2
 from threading import Thread
 
-class motiondetection():
+class Motiondetection():
     
-    def __init__(self, video = False):
+    def __init__(self, cvshow = True, uishow = False, video = False):
+        #boolean flags to interact with ui
+        self.uishow = uishow
+        self.cvshow = cvshow
+
         # Initialize the video capture object
         if video != False:
             self.cap = cv2.VideoCapture(video)
@@ -14,9 +18,14 @@ class motiondetection():
         self.frame = self.cap.read()[1]
         self.prev_frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
         self.prev_frame = cv2.GaussianBlur(self.prev_frame, (21, 21), 0)
+    
+    def stop(self):
+        self.fitting = False
 
-    def fit(self, show = True):
-        while True:
+    def fit(self, ui = False):
+        self.uishow = ui
+        self.fitting = True
+        while self.fitting == True:
             # Read the current frame
             self.frame = self.cap.read()[1]
             
@@ -41,10 +50,12 @@ class motiondetection():
                 if cv2.contourArea(contour) < 500:  # Adjust the minimum contour area as needed
                     continue
                 x, y, w, h = cv2.boundingRect(contour)
-                cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                if self.uishow or self.cvshow:
+                    cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             
-            # Show the frames
-            cv2.imshow("Motion Detection", self.frame)
+            if self.cvshow:
+                # Show the frames
+                cv2.imshow("Motion Detection", self.frame)
             
             # Quit if the 'q' key is pressed
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -57,7 +68,7 @@ class motiondetection():
         self.cap.release()
         cv2.destroyAllWindows()
 
-t = motiondetection()
+"""t = motiondetection()
 
 status = True
 detect_alg = Thread(target = t.fit)
@@ -72,3 +83,4 @@ while status!=False:
 
 status = False
 detect_alg.join()
+"""
