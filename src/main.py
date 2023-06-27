@@ -1,47 +1,28 @@
-from motion2 import Motiondetection
+import motion2
 from threading import Thread
 import PySimpleGUI as sg
 import cv2
 
-t = Motiondetection()
-
-layout = [[sg.Button('Show', size=(10, 1), font='Helvetica 14')],
-          [sg.Button('Stop', size=(10, 1), font='Helvetica 14')],
-          [sg.Button('uiShow', size=(10, 1), font='Helvetica 14')],
-          [sg.Image(filename='', key='image')]]
+layout = [[sg.Button('START', size=(10, 1), font='Helvetica 14')],
+          [sg.Button('STOP', size=(10, 1), font='Helvetica 14')]]
 
 window = sg.Window('Demo Application - OpenCV Integration',
                     layout, location=(800, 400))
 
 i = 0
-showmotion = False
 while True:
 
     event, values = window.read(timeout=20)
     if event == 'Exit' or event == sg.WIN_CLOSED:
         break
 
-    elif event == 'Show':
-        motiondetection = Thread(target = t.fit)
+    elif event == 'START':
+        motiondetection = Thread(target = motion2.fit, daemon = True)
         motiondetection.start()
-    
-    elif event == 'Stop':
-        motiondetection._stop()
 
-    elif event == 'uishow':
-        showmotion=True
-        motiondetection = Thread(target = t.fit, args=True)
-
-    if showmotion:
-        frame = t.frame
-        imgbytes = cv2.imencode('.png', frame)[1].tobytes()  # ditto
-        window['image'].update(data=imgbytes)
-    
-
-    
-
-    
-
+    elif event == 'STOP':
+        stopmotiondetection = Thread(target = motion2.stop)
+        stopmotiondetection.start()
     
     i+=1
     print(i, event)
