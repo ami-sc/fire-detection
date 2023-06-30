@@ -1,5 +1,5 @@
-import motion2
 from threading import Thread
+import motion2
 import PySimpleGUI as sg
 import cv2
 

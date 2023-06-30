@@ -1,42 +1,47 @@
 import cv2
 
-cap = False
 fitting = False
 
 def stop():
     #stops fitting function if it's running
-
-    global cap
+    print("stop function")
     global fitting
 
     if fitting == True:
+        print("fitting = False")
         fitting = False
-        cv2.destroyAllWindows() # destroys cv2 window
-        cap.release()
 
 
 def fit(video = False, toshow = True):
     global fitting
-    global cap
-
+    print("fitting = True")
     fitting = True
+    print(fitting)
+    print(video)
 
     # By default it will use the camera
+    print("initializing cap")
     if video != False:# if a video to use is given, it will use it
         cap = cv2.VideoCapture(video)
     else:
+        print("video = False")
         cap = cv2.VideoCapture(0)
 
     # initializing first variables
+    print("reading first frame")
     prev_frame = cap.read()[1] #first frame
+    print(prev_frame.shape)
+    print("manipulating first frame")
     prev_frame = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
     prev_frame = cv2.GaussianBlur(prev_frame, (21, 21), 0) #converting to grayscale and blurring
 
-    while fitting == True: #until stop() is called run this
+    while fitting: #until stop() is called run this
         # Read the current frame
+        print("reading i frame")
         frame = cap.read()[1]
         
         # Convert the frame to grayscale and apply blur
+        print("manipulating i frame")
         current_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         current_frame = cv2.GaussianBlur(current_frame, (21, 21), 0)
         
@@ -72,6 +77,10 @@ def fit(video = False, toshow = True):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             stop()
             break
+        print("end of iteration")
+    print("destroying all windows and releasing cap")
+    cv2.destroyAllWindows() # destroys cv2 window
+    cap.release()
         
 
     
