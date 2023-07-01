@@ -1,24 +1,28 @@
-"""
-Created on Thu Jun  8 14:14:08 2023
-
-@author: mediolanum
-"""
-
 import numpy as np 
 import cv2
 
 class MotionDetection():
-    def __init__(self, video, initial_treshold, a, c, grayscale = False):
+
+    def __init__(self, video_path=None, initial_treshold=50, a=0.95, c=4, grayscale = False):
+        if video_path == None:
+            self.video = cv2.VideoCapture(0) #use camera by default
+        else:
+            self.video = cv2.VideoCapture(video_path) #if a path is given, take the video from that path
+
+        self.run = False
+
+        #parameters for the algorithm
         self.a = a
         self.c  = c
-        self.shape = video.read(0)[1].shape
-        self.video = video
+        self.shape = self.video.read(0)[1].shape
         self.threshold = np.full(self.shape, initial_treshold)
         self.red = np.full(self.shape, [0,0,255], dtype = np.uint8) 
 
+
     def define_rectangles(self):
-        h_n = 20  # number of rectangles in height
-        w_n = 60  # number of rectangle in width
+        #this function defines the border of the rectangles
+        h_n = 20  # number of rows of rectangles
+        w_n = 60  # number of columns of rectangles
         h = self.shape[0]
         w = self.shape[1]
 
@@ -31,30 +35,29 @@ class MotionDetection():
         self.rectangles = np.stack((width_start, height_start, width_end, height_end), axis=-1).reshape(-1, 4)
 
 
-
-
-
     def draw_rectangles(self):
-        count = 0
-        for u in self.rectangles:
+        count = 0 #used to identify the rectangle
+        for u in self.rectangles: # for every rectangle
             top_left, bottom_right = (u[0], u[1]),  (u[2], u[3])
             if self.moving_rectangles[count] == True: 
-                
-                cv2.rectangle(self.img, top_left, bottom_right, [255,0,0], 3)
+                # if that region is moving
+                cv2.rectangle(self.img, top_left, bottom_right, [255,0,0], 3)# draw the borders of the rectangle
             count += 1
         
 
     def rectangle_moving(self, moving_pixels):
-        self.moving_rectangles = []
-        for borders in self.rectangles:
+        self.moving_rectangles = [] # [True, False, ...] if index i==True then region i is moving
+        for borders in self.rectangles:# for every rectangle
+                # take the pixels in the region and see if they are moving
                 rectangle = moving_pixels[borders[0]:borders[2], borders[1]:borders[3]]
             #if rectangle.shape[0] != 0 and rectangle.shape[1]!=0:
-                if rectangle.sum()>rectangle.size*0.2:
-                    self.moving_rectangles.append(True)
+                if rectangle.sum()>rectangle.size*0.2: # if more that 20% of the pixels are moving
+                    self.moving_rectangles.append(True) # then we say that the region is moving
                 else:
                     self.moving_rectangles.append(False)
-                  
 
+    def stop(self):
+        self.run = False
 
     def fit(self):
         background = self.video.read()[1]
@@ -65,8 +68,10 @@ class MotionDetection():
         red = self.red
 
         self.define_rectangles()
+        print("run=True")
+        self.run=True
         ######starting loop#######
-        while True:     
+        while self.run:     
             self.img = self.video.read()[1]
             #cv2.imshow("camera", img)
 
@@ -99,10 +104,8 @@ class MotionDetection():
             if  cv2.waitKey(10) & 0xFF == ord('q'):
                 break
 
+"""t = MotionDetection()
+t.fit()"""
 
-
-t = cv2.VideoCapture(0)
-motion = MotionDetection(t, 50, 0.95, 4)
-motion.fit()
 
 
