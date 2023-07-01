@@ -22,7 +22,7 @@ class MotionDetection():
     def define_rectangles(self):
         #this function defines the border of the rectangles
         h_n = 20  # number of rows of rectangles
-        w_n = 60  # number of columns of rectangles
+        w_n = 50  # number of columns of rectangles
         h = self.shape[0]
         w = self.shape[1]
 
@@ -33,6 +33,8 @@ class MotionDetection():
         width_end, height_end = np.meshgrid(width_points[1:], height_points[1:])
 
         self.rectangles = np.stack((width_start, height_start, width_end, height_end), axis=-1).reshape(-1, 4)
+
+
 
 
     def draw_rectangles(self):
@@ -49,7 +51,7 @@ class MotionDetection():
         self.moving_rectangles = [] # [True, False, ...] if index i==True then region i is moving
         for borders in self.rectangles:# for every rectangle
                 # take the pixels in the region and see if they are moving
-                rectangle = moving_pixels[borders[0]:borders[2], borders[1]:borders[3]]
+                rectangle = moving_pixels[borders[1]:borders[3], borders[0]:borders[2]]
             #if rectangle.shape[0] != 0 and rectangle.shape[1]!=0:
                 if rectangle.sum()>rectangle.size*0.2: # if more that 20% of the pixels are moving
                     self.moving_rectangles.append(True) # then we say that the region is moving
@@ -68,7 +70,6 @@ class MotionDetection():
         red = self.red
 
         self.define_rectangles()
-        print("run=True")
         self.run=True
         ######starting loop#######
         while self.run:     
@@ -104,8 +105,8 @@ class MotionDetection():
             if  cv2.waitKey(10) & 0xFF == ord('q'):
                 break
 
-"""t = MotionDetection()
-t.fit()"""
+t = MotionDetection()
+t.fit()
 
 
 
