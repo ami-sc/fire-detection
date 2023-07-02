@@ -84,42 +84,62 @@ class MotionDetection():
 
     def draw_rectangles(self):
         #draw bigger rectangles
-        for bigger_rectangles in self.rectangles_m:
-            for i, u in enumerate(bigger_rectangles): # for every rectangle
+        for degree, moving_regctangles_degree in enumerate(self.moving_rectangles_index_m):
+            for rectangle_index in moving_regctangles_degree:
+                u = self.rectangles_m[degree][rectangle_index]
                 top_left, bottom_right = (u[0], u[1]),  (u[2], u[3])
-                # cv2.rectangle(self.img, top_left, bottom_right, [255,255,0], 2) # uncommenting this, will draw all the bigger rectangles
-                if self.moving_rectangles_m[i]:
-                    cv2.rectangle(self.img, top_left, bottom_right, [255,255,255], 3)
-
+                cv2.rectangle(self.img, top_left, bottom_right, [255,255,0], 3)# draw the borders of the rectangle
         #draw smaller rectangles
-        for i, u in enumerate(self.rectangles): # for every rectangle
+        for i in self.moving_rectangles_index:
+            u = self.rectangles[i]
             top_left, bottom_right = (u[0], u[1]),  (u[2], u[3])
-            if self.moving_rectangles[i] == True: 
-                # if that region is moving
-                cv2.rectangle(self.img, top_left, bottom_right, [255,0,0], 3)# draw the borders of the rectangle
-        
+            cv2.rectangle(self.img, top_left, bottom_right, [255,0,0], 3)# draw the borders of the rectangle
+
+
+
     def rectangle_moving(self, moving_pixels):
-        self.moving_rectangles = [] # [True, False, ...] if index i==True then region i is moving
-        moving_rectangles_index = [] # list with the index of all the moving rectangles
-        for i, borders in enumerate(self.rectangles):# for every rectangle
+        self.moving_rectangles_index = [] # list with the index of all smaller moving rectangles
+        for i, borders in enumerate(self.rectangles):# for every rectangle(coordinates)
                 rectangle = moving_pixels[borders[1]:borders[3], borders[0]:borders[2]] # take the pixels in the region
                 if rectangle.sum()>rectangle.size*0.2: # if more that 20% of the pixels are moving
-                    self.moving_rectangles.append(True) # then we say that the region is moving
-                    moving_rectangles_index.append(i)
-                else:
-                    self.moving_rectangles.append(False)
-        moving_rectangles_index = np.array(moving_rectangles_index)
+                    self.moving_rectangles_index.append(i) # then append the index of the rectangle to the list of moving rectangles index
 
-        self.moving_rectangles_m = [] # [True, False, ...] if index i==True then region i is moving
+        self.moving_rectangles_index = np.array(self.moving_rectangles_index)
+
+        self.moving_rectangles_index_m = [] #list with the index of all bigger moving rectangles
         for i, small_rectangles_index in enumerate(self.small_rectangles_index_m): # for every degree of bigger rectangle
-            for i, smaller_rectangles_in_i in enumerate(small_rectangles_index): # for every rectangle
-                common = np.intersect1d(np.array(smaller_rectangles_in_i), moving_rectangles_index)
-                if len(common)/len(smaller_rectangles_in_i)>0.25:
-                    self.moving_rectangles_m.append(True)
-                    for rectangle_i in common:
-                        self.moving_rectangles[rectangle_i] = False
-                else:
-                    self.moving_rectangles_m.append(False)
+            contained = set() #contains the index of the rectangles of (i-1)th degree contained by the rectangles of (i)th degree
+            self.moving_rectangles_index_m.append([]) #create a empty list of the rectangles of ith degree
+            for j, smaller_rectangles_in_i in enumerate(small_rectangles_index): # for every rectangle of ith degree
+                common = np.intersect1d(np.array(smaller_rectangles_in_i), self.moving_rectangles_index) # take the moving rectangles of (i-1)th degree contained in the ith degree rectangle
+                if len(common)/len(smaller_rectangles_in_i)>0.25: # if more than 25% of rectangles of (i-1)th degree contained are moving
+                    self.moving_rectangles_index_m[i].append(j) # then the ith degree rectangle is moving
+                    contained.update(common) # put the rectangles of (i-1)th degree in the set of moving and contained rectangles of (i-1)th degree
+        self.moving_rectangles_index = np.setdiff1d(self.moving_rectangles_index, list(contained))#the rectangles of (i-1)th that are moving and are not contained
+        
+    def fetch_model_input(self):
+        """transforms the moving regions into images for the model"""
+        images = []
+        for degree, moving_regctangles_degree in enumerate(self.moving_rectangles_index_m):
+            for rectangle_index in moving_regctangles_degree:
+                u = self.rectangles_m[degree][rectangle_index]
+                top_left, bottom_right = (u[0], u[1]),  (u[2], u[3])
+                image = self.img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+                images.append(image)
+
+        for i in self.moving_rectangles_index:
+            u = self.rectangles[i]
+            top_left, bottom_right = (u[0], u[1]),  (u[2], u[3])
+            image = self.img[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]]
+            images.append(image)
+        i = 0
+        for image in images:
+            cv2.imwrite(f"../data/model_input/g{i}.jpg", image)
+            i+=1
+        return images
+    
+            
+
 
     def stop(self):
         self.run = False
@@ -167,7 +187,7 @@ class MotionDetection():
            
             self.draw_rectangles()
 
-            #self.get_model_input()
+            self.fetch_model_input()
             cv2.imshow("", self.img)
             if  cv2.waitKey(10) & 0xFF == ord('q'):
                 break

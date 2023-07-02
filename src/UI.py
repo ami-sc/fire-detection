@@ -1,5 +1,5 @@
 from threading import Thread
-from motion import MotionDetection
+from motion2 import MotionDetection
 import PySimpleGUI as sg
 
 layout = [[sg.Button('START', size=(10, 1), font='Helvetica 14')],

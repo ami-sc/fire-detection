@@ -34,9 +34,6 @@ class MotionDetection():
 
         self.rectangles = np.stack((width_start, height_start, width_end, height_end), axis=-1).reshape(-1, 4)
 
-
-
-
     def draw_rectangles(self):
         count = 0 #used to identify the rectangle
         for u in self.rectangles: # for every rectangle
@@ -46,7 +43,6 @@ class MotionDetection():
                 cv2.rectangle(self.img, top_left, bottom_right, [255,0,0], 3)# draw the borders of the rectangle
             count += 1
         
-
     def rectangle_moving(self, moving_pixels):
         self.moving_rectangles = [] # [True, False, ...] if index i==True then region i is moving
         for borders in self.rectangles:# for every rectangle
