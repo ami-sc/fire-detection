@@ -171,12 +171,12 @@ class MotionDetection():
 
         # 5 update threshold
             difference_with_background = abs(self.img-background)
-            changes_compared_to_background = difference_with_background > threshold #binary mask
             updated_treshold = threshold*a+(1-a)*(c*difference_with_background)
             threshold = np.where(changes, updated_treshold, threshold)
 
         # 6 detecting moving regions
          #   highlight = np.where(changes_compared_to_background, red, img) #(1) red if true else value from camera
+            changes_compared_to_background = difference_with_background > threshold #binary mask
             moving_pixels = np.any(changes_compared_to_background, axis = 2)
       
            # cv2.imshow("changes", highlight) #(1)
